@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}GeoPermit System{% endblock %}</title>
+
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --gov-green: #1a6b45;
+      --gov-green-dark: #134f33;
+      --gov-green-light: #e8f5ee;
+      --gov-blue: #1a4a7a;
+      --gov-blue-light: #e8f0fa;
+      --sidebar-width: 240px;
+    }
+
+    body { background: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-width);
+      background: var(--gov-green-dark);
+      color: #fff;
+      display: flex; flex-direction: column;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar-brand {
+      padding: 1.25rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    .sidebar-brand h5 { font-weight: 700; margin: 0; font-size: .95rem; letter-spacing: .02em; }
+    .sidebar-brand small { color: rgba(255,255,255,.55); font-size: .75rem; }
+    .sidebar-nav { padding: .75rem 0; flex: 1; }
+    .sidebar-nav .nav-label {
+      font-size: .65rem; text-transform: uppercase; letter-spacing: .08em;
+      color: rgba(255,255,255,.4); padding: .75rem 1rem .25rem;
+    }
+    .sidebar-nav .nav-item a {
+      display: flex; align-items: center; gap: .6rem;
+      padding: .55rem 1rem; color: rgba(255,255,255,.75);
+      text-decoration: none; font-size: .875rem; border-radius: 0;
+      transition: background .15s, color .15s;
+    }
+    .sidebar-nav .nav-item a:hover,
+    .sidebar-nav .nav-item a.active {
+      background: rgba(255,255,255,.1); color: #fff;
+    }
+    .sidebar-nav .nav-item a i { font-size: 1rem; width: 18px; }
+    .sidebar-footer {
+      padding: .75rem 1rem;
+      border-top: 1px solid rgba(255,255,255,.1);
+      font-size: .8rem; color: rgba(255,255,255,.5);
+    }
+
+    /* Main content */
+    .main-content {
+      margin-left: var(--sidebar-width);
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: .75rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar .page-title { font-weight: 600; font-size: 1rem; color: #1f2937; margin: 0; }
+    .content-area { padding: 1.5rem; flex: 1; }
+
+    /* Cards */
+    .stat-card {
+      background: #fff; border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      padding: 1.25rem; display: flex; align-items: center; gap: 1rem;
+    }
+    .stat-card .icon-wrap {
+      width: 48px; height: 48px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .stat-card .stat-num { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+    .stat-card .stat-label { font-size: .8rem; color: #6b7280; margin-top: .2rem; }
+
+    /* Status badges */
+    .badge-pending    { background: #fef3c7; color: #92400e; }
+    .badge-under_review { background: #dbeafe; color: #1e40af; }
+    .badge-approved   { background: #d1fae5; color: #065f46; }
+    .badge-rejected   { background: #fee2e2; color: #991b1b; }
+    .badge-hazard     { background: #fee2e2; color: #991b1b; }
+
+    /* Hazard alert */
+    .hazard-alert {
+      border: 2px solid #f59e0b; background: #fffbeb;
+      border-radius: 8px; padding: 1rem;
+      display: none;
+    }
+    .hazard-alert.show { display: block; }
+
+    /* Table */
+    .data-table { background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #e5e7eb; }
+    .data-table table { margin: 0; }
+    .data-table thead th { background: var(--gov-green-light); color: var(--gov-green-dark); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; border: none; }
+    .data-table tbody td { vertical-align: middle; font-size: .875rem; }
+
+    /* Auth pages */
+    .auth-wrapper {
+      min-height: 100vh; background: linear-gradient(135deg, var(--gov-green-dark) 0%, var(--gov-blue) 100%);
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .auth-card {
+      background: #fff; border-radius: 14px;
+      padding: 2.5rem 2rem; width: 100%; max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+    .auth-logo { font-size: 2rem; color: var(--gov-green); }
+    .btn-gov { background: var(--gov-green); color: #fff; border: none; }
+    .btn-gov:hover { background: var(--gov-green-dark); color: #fff; }
+
+    /* Leaflet map */
+    #permit-map { height: 350px; border-radius: 8px; border: 1px solid #d1d5db; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); transition: transform .2s; }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-left: 0; }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if session.get('user_id') %}
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <i class="bi bi-geo-alt-fill text-warning fs-5"></i>
+      <h5>GeoPermit</h5>
+    </div>
+    <small>{{ current_user_name }}</small>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-label">Main</div>
+    <ul class="nav flex-column">
+      <li class="nav-item">
+        <a href="{{ url_for('dashboard.index') }}"
+           class="{{ 'active' if request.endpoint == 'dashboard.index' }}">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+      </li>
+
+      {% if current_user_role == 'user' %}
+      <div class="nav-label">Permits</div>
+      <li class="nav-item">
+        <a href="{{ url_for('permits.apply') }}"
+           class="{{ 'active' if request.endpoint == 'permits.apply' }}">
+          <i class="bi bi-file-earmark-plus"></i> Apply for Permit
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('permits.my_applications') }}"
+           class="{{ 'active' if request.endpoint == 'permits.my_applications' }}">
+          <i class="bi bi-clipboard2-check"></i> My Applications
+        </a>
+      </li>
+      {% endif %}
+
+      {% if current_user_role == 'admin' %}
+      <div class="nav-label">Admin</div>
+      <li class="nav-item">
+        <a href="{{ url_for('admin.applications') }}"
+           class="{{ 'active' if request.endpoint == 'admin.applications' }}">
+          <i class="bi bi-folder2-open"></i> All Applications
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('admin.users') }}"
+           class="{{ 'active' if request.endpoint == 'admin.users' }}">
+          <i class="bi bi-people"></i> Manage Users
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="{{ url_for('auth.logout') }}" class="text-white-50 text-decoration-none d-flex align-items-center gap-2">
+      <i class="bi bi-box-arrow-left"></i> Logout
+    </a>
+  </div>
+</aside>
+
+<!-- Main content -->
+<div class="main-content">
+  <div class="topbar">
+    <span class="page-title">{% block page_title %}Dashboard{% endblock %}</span>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-{{ 'success' if current_user_role == 'admin' else 'primary' }}">
+        {{ current_user_role | title }}
+      </span>
+      <span class="text-muted small">{{ current_user_name }}</span>
+    </div>
+  </div>
+
+  <div class="content-area">
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+{% else %}
+<!-- Auth pages — no sidebar -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div style="position:fixed;top:1rem;right:1rem;z-index:9999;min-width:280px">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

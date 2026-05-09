@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Register — GeoPermit{% endblock %}
+
+{% block auth_content %}
+<div class="auth-wrapper">
+  <div class="auth-card" style="max-width:460px">
+    <div class="text-center mb-4">
+      <div class="auth-logo mb-2"><i class="bi bi-person-plus-fill"></i></div>
+      <h4 class="fw-bold mb-0">Create Account</h4>
+      <p class="text-muted small mt-1">GeoPermit System — New User Registration</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+      <div class="mb-3">
+        <label class="form-label fw-medium small">Full Name</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-person"></i></span>
+          <input type="text" name="full_name" class="form-control" placeholder="Juan dela Cruz" required />
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-medium small">Email Address</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          <input type="email" name="email" class="form-control" placeholder="you@example.com" required />
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-medium small">Password</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input type="password" name="password" class="form-control" placeholder="At least 6 characters" required />
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-medium small">Confirm Password</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+          <input type="password" name="confirm_password" class="form-control" placeholder="Repeat password" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-gov w-100 py-2 fw-semibold">
+        <i class="bi bi-person-check me-1"></i> Register
+      </button>
+    </form>
+
+    <p class="text-center text-muted small mt-3 mb-0">
+      Already have an account?
+      <a href="{{ url_for('auth.login') }}" class="text-success fw-medium">Sign in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

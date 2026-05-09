@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — GeoPermit{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stats row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-2">
+    <div class="stat-card">
+      <div class="icon-wrap" style="background:#e8f0fa;color:#1a4a7a"><i class="bi bi-folder2"></i></div>
+      <div><div class="stat-num">{{ stats.total }}</div><div class="stat-label">Total</div></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card">
+      <div class="icon-wrap" style="background:#fef3c7;color:#92400e"><i class="bi bi-clock-history"></i></div>
+      <div><div class="stat-num">{{ stats.pending }}</div><div class="stat-label">Pending</div></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card">
+      <div class="icon-wrap" style="background:#d1fae5;color:#065f46"><i class="bi bi-check-circle"></i></div>
+      <div><div class="stat-num">{{ stats.approved }}</div><div class="stat-label">Approved</div></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card">
+      <div class="icon-wrap" style="background:#fee2e2;color:#991b1b"><i class="bi bi-x-circle"></i></div>
+      <div><div class="stat-num">{{ stats.rejected }}</div><div class="stat-label">Rejected</div></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card">
+      <div class="icon-wrap" style="background:#ffe4e1;color:#b91c1c"><i class="bi bi-exclamation-triangle"></i></div>
+      <div><div class="stat-num">{{ stats.hazard }}</div><div class="stat-label">Hazard Zone</div></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card">
+      <div class="icon-wrap" style="background:#e8f5ee;color:#1a6b45"><i class="bi bi-people"></i></div>
+      <div><div class="stat-num">{{ stats.users }}</div><div class="stat-label">Users</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts + recent applications -->
+<div class="row g-4">
+  <div class="col-md-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Application Status</h6>
+        <canvas id="status-chart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0">Recent Applications</h6>
+          <a href="{{ url_for('admin.applications') }}" class="small text-success">View all →</a>
+        </div>
+        <table class="table table-sm table-hover mb-0">
+          <thead><tr><th>#</th><th>Applicant</th><th>Type</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for app in applications[:8] %}
+            <tr>
+              <td class="text-muted small">{{ app.id }}</td>
+              <td class="small fw-medium">{{ app.full_name }}</td>
+              <td class="small">{{ app.permit_type_name }}</td>
+              <td>
+                <span class="badge badge-{{ app.status }} rounded-pill">
+                  {{ app.status | replace('_',' ') | title }}
+                </span>
+              </td>
+              <td>
+                <a href="{{ url_for('admin.review_application', app_id=app.id) }}"
+                   class="btn btn-sm btn-outline-secondary py-0">Review</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+new Chart(document.getElementById('status-chart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Pending', 'Approved', 'Rejected'],
+    datasets: [{
+      data: [{{ stats.pending }}, {{ stats.approved }}, {{ stats.rejected }}],
+      backgroundColor: ['#fbbf24', '#10b981', '#ef4444'],
+      borderWidth: 2, borderColor: '#fff'
+    }]
+  },
+  options: {
+    plugins: { legend: { position: 'bottom' } },
+    cutout: '65%'
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Application #{{ application.id }} — GeoPermit{% endblock %}
+{% block page_title %}Application #{{ application.id }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Details -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <h6 class="fw-bold mb-1">{{ application.project_title }}</h6>
+            <span class="badge badge-{{ application.status }} rounded-pill">
+              {{ application.status | replace('_',' ') | title }}
+            </span>
+          </div>
+          <span class="text-muted small">{{ application.submitted_at.strftime('%B %d, %Y') }}</span>
+        </div>
+
+        <table class="table table-sm table-borderless mb-0">
+          <tr><th class="text-muted fw-normal small" style="width:160px">Permit Type</th><td>{{ application.permit_type_name }}</td></tr>
+          <tr><th class="text-muted fw-normal small">Applicant</th><td>{{ application.full_name }} ({{ application.email }})</td></tr>
+          <tr><th class="text-muted fw-normal small">Description</th><td>{{ application.project_description or '—' }}</td></tr>
+          <tr>
+            <th class="text-muted fw-normal small">Location</th>
+            <td>
+              {{ application.location_address or '—' }}<br>
+              <span class="text-muted small">{{ application.location_lat }}, {{ application.location_lng }}</span>
+            </td>
+          </tr>
+          <tr>
+            <th class="text-muted fw-normal small">Hazard Zone</th>
+            <td>
+              {% if application.is_hazard_zone %}
+                <span class="badge badge-hazard"><i class="bi bi-exclamation-triangle-fill me-1"></i>Yes</span>
+                <div class="small text-muted mt-1">{{ application.hazard_info }}</div>
+              {% else %}
+                <span class="text-success small"><i class="bi bi-check-circle me-1"></i>Not in hazard zone</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% if application.admin_remarks %}
+          <tr>
+            <th class="text-muted fw-normal small">Admin Remarks</th>
+            <td class="fst-italic">{{ application.admin_remarks }}</td>
+          </tr>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+
+    <!-- Documents -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Uploaded Documents</h6>
+        {% if documents %}
+          <ul class="list-group list-group-flush">
+            {% for doc in documents %}
+            <li class="list-group-item px-0 d-flex align-items-center gap-2">
+              <i class="bi bi-file-earmark text-primary"></i>
+              <a href="{{ url_for('static', filename='uploads/' + doc.filename) }}"
+                 target="_blank" class="text-decoration-none">{{ doc.original_name }}</a>
+              <span class="badge bg-light text-secondary ms-auto">{{ doc.file_type | upper }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted small mb-0">No documents uploaded.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Mini map -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Project Location</h6>
+        <div id="view-map" style="height:300px;border-radius:8px;border:1px solid #d1d5db"></div>
+      </div>
+    </div>
+    <a href="{{ url_for('permits.my_applications') }}" class="btn btn-outline-secondary btn-sm mt-3">
+      <i class="bi bi-arrow-left me-1"></i> Back to My Applications
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const lat = {{ application.location_lat or 14.5995 }};
+const lng = {{ application.location_lng or 120.9842 }};
+
+const map = L.map('view-map').setView([lat, lng], 15);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+{% if application.is_hazard_zone %}
+const icon = L.icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41], iconAnchor: [12, 41]
+});
+L.marker([lat, lng], { icon }).addTo(map)
+  .bindPopup('<strong>⚠️ Hazard Zone</strong><br>{{ application.hazard_info }}').openPopup();
+{% else %}
+L.marker([lat, lng]).addTo(map)
+  .bindPopup('<strong>{{ application.project_title }}</strong>').openPopup();
+{% endif %}
+</script>
+{% endblock %}

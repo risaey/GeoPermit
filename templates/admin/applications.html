@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}All Applications — GeoPermit Admin{% endblock %}
+{% block page_title %}All Applications{% endblock %}
+
+{% block content %}
+<!-- Filter tabs -->
+<div class="d-flex gap-2 mb-3 flex-wrap">
+  {% for status in ['all', 'pending', 'under_review', 'approved', 'rejected'] %}
+  <a href="{{ url_for('admin.applications', status=status) }}"
+     class="btn btn-sm {{ 'btn-gov' if current_filter == status else 'btn-outline-secondary' }}">
+    {{ status | replace('_',' ') | title }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="data-table">
+  <div class="p-3 border-bottom">
+    <input id="search-input" type="text" class="form-control form-control-sm"
+           placeholder="🔍  Search applications..." style="max-width:340px" />
+  </div>
+  <table class="table table-hover mb-0" id="app-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Applicant</th>
+        <th>Permit Type</th>
+        <th>Project Title</th>
+        <th>Hazard</th>
+        <th>Submitted</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for app in applications %}
+      <tr>
+        <td class="text-muted small">{{ app.id }}</td>
+        <td>
+          <div class="fw-medium small">{{ app.full_name }}</div>
+          <div class="text-muted" style="font-size:.75rem">{{ app.email }}</div>
+        </td>
+        <td class="small">{{ app.permit_type_name }}</td>
+        <td class="fw-medium small">{{ app.project_title }}</td>
+        <td>
+          {% if app.is_hazard_zone %}
+            <span class="badge badge-hazard"><i class="bi bi-exclamation-triangle-fill"></i></span>
+          {% else %}
+            <i class="bi bi-check-circle text-success"></i>
+          {% endif %}
+        </td>
+        <td class="small text-muted">{{ app.submitted_at.strftime('%Y-%m-%d') }}</td>
+        <td>
+          <span class="badge badge-{{ app.status }} rounded-pill">
+            {{ app.status | replace('_',' ') | title }}
+          </span>
+        </td>
+        <td>
+          <a href="{{ url_for('admin.review_application', app_id=app.id) }}"
+             class="btn btn-sm btn-outline-secondary py-0">Review</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="8" class="text-center text-muted py-5">
+          <i class="bi bi-folder2-open d-block fs-1 mb-2"></i>No applications found.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('search-input').addEventListener('input', function () {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('#app-table tbody tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}

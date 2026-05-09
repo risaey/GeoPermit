@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}Apply for Permit — GeoPermit{% endblock %}
+{% block page_title %}Apply for Permit{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Form -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-4 pb-2 border-bottom">Permit Application Form</h6>
+
+        <form id="permit-form" method="POST" action="{{ url_for('permits.apply') }}" enctype="multipart/form-data">
+
+          <!-- Permit type -->
+          <div class="mb-3">
+            <label class="form-label fw-medium small">Permit Type <span class="text-danger">*</span></label>
+            <select name="permit_type_id" id="permit-type" class="form-select" required>
+              <option value="">— Select permit type —</option>
+              {% for pt in permit_types %}
+              <option value="{{ pt.id }}">{{ pt.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Smart requirement suggestion -->
+          <div id="req-box" class="alert alert-info d-none mb-3">
+            <strong class="d-block mb-1"><i class="bi bi-info-circle me-1"></i> Required Documents</strong>
+            <ul id="req-list" class="mb-0 ps-3 small"></ul>
+          </div>
+
+          <!-- Project title -->
+          <div class="mb-3">
+            <label class="form-label fw-medium small">Project Title <span class="text-danger">*</span></label>
+            <input type="text" name="project_title" class="form-control"
+                   placeholder="e.g., Tree Removal — Lot 12, Barangay San Jose" required />
+          </div>
+
+          <!-- Description -->
+          <div class="mb-3">
+            <label class="form-label fw-medium small">Project Description</label>
+            <textarea name="project_description" class="form-control" rows="3"
+                      placeholder="Briefly describe the project purpose and scope..."></textarea>
+          </div>
+
+          <!-- Hidden location fields populated by map -->
+          <input type="hidden" name="lat"     id="lat-input" />
+          <input type="hidden" name="lng"     id="lng-input" />
+          <input type="hidden" name="address" id="address-input" />
+
+          <!-- Address display -->
+          <div class="mb-3">
+            <label class="form-label fw-medium small">Selected Location <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-pin-map"></i></span>
+              <input type="text" id="address-display" class="form-control"
+                     placeholder="Click on the map to select a location" readonly />
+            </div>
+          </div>
+
+          <!-- Hazard warning -->
+          <div id="hazard-alert" class="hazard-alert mb-3">
+            <div class="d-flex gap-2 align-items-start">
+              <i class="bi bi-exclamation-triangle-fill text-warning fs-5 flex-shrink-0 mt-1"></i>
+              <div>
+                <strong>Hazard Zone Warning</strong>
+                <div id="hazard-details" class="small mt-1"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- File upload -->
+          <div class="mb-4">
+            <label class="form-label fw-medium small">Supporting Documents</label>
+            <input type="file" name="documents" class="form-control" multiple
+                   accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" />
+            <div class="form-text">PDF, images, Word documents accepted. Max 16 MB total.</div>
+          </div>
+
+          <button type="submit" class="btn btn-gov px-4 py-2 fw-semibold" id="submit-btn" disabled>
+            <i class="bi bi-send me-1"></i> Submit Application
+          </button>
+          <p class="small text-muted mt-2 mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            You must pin a location on the map before submitting.
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-1">Pin Project Location</h6>
+        <p class="text-muted small mb-3">Click anywhere on the map to mark your project site.</p>
+        <div id="permit-map"></div>
+        <div class="mt-2 small text-muted">
+          <i class="bi bi-crosshair me-1"></i>
+          Lat: <span id="coord-lat">—</span> &nbsp;|&nbsp;
+          Lng: <span id="coord-lng">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+// -----------------------------------------------------------------------
+// Leaflet map setup — centered on Metro Manila
+// -----------------------------------------------------------------------
+const map = L.map('permit-map').setView([14.5995, 120.9842], 11);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+let marker = null;
+
+map.on('click', async function (e) {
+  const { lat, lng } = e.latlng;
+
+  // Update or create marker
+  if (marker) {
+    marker.setLatLng([lat, lng]);
+  } else {
+    marker = L.marker([lat, lng]).addTo(map);
+  }
+
+  // Update hidden inputs and display
+  document.getElementById('lat-input').value = lat.toFixed(7);
+  document.getElementById('lng-input').value = lng.toFixed(7);
+  document.getElementById('coord-lat').textContent = lat.toFixed(5);
+  document.getElementById('coord-lng').textContent = lng.toFixed(5);
+
+  // Reverse geocode with Nominatim
+  const address = await reverseGeocode(lat, lng);
+  document.getElementById('address-display').value = address;
+  document.getElementById('address-input').value   = address;
+
+  // Enable submit
+  document.getElementById('submit-btn').disabled = false;
+
+  // GIS hazard check
+  checkHazard(lat, lng);
+});
+
+async function reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+    );
+    const data = await res.json();
+    return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  } catch {
+    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  }
+}
+
+async function checkHazard(lat, lng) {
+  try {
+    const res  = await fetch(`/api/check-hazard?lat=${lat}&lng=${lng}`);
+    const data = await res.json();
+    const alertEl   = document.getElementById('hazard-alert');
+    const detailsEl = document.getElementById('hazard-details');
+
+    if (data.is_hazard) {
+      const lines = data.zones.map(z =>
+        `<strong>${z.name}</strong> — ${z.hazard_type.toUpperCase()} zone ` +
+        `(${z.distance_m} m away). ${z.description}`
+      );
+      detailsEl.innerHTML = lines.join('<br>');
+      alertEl.classList.add('show');
+      marker.setIcon(L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41], iconAnchor: [12, 41]
+      }));
+    } else {
+      alertEl.classList.remove('show');
+      marker.setIcon(new L.Icon.Default());
+    }
+  } catch (err) {
+    console.error('Hazard check failed:', err);
+  }
+}
+
+// -----------------------------------------------------------------------
+// Smart requirement suggestion on permit type change
+// -----------------------------------------------------------------------
+document.getElementById('permit-type').addEventListener('change', async function () {
+  const id    = this.value;
+  const reqBox = document.getElementById('req-box');
+  const reqList = document.getElementById('req-list');
+
+  if (!id) { reqBox.classList.add('d-none'); return; }
+
+  try {
+    const res  = await fetch(`/api/permit-requirements/${id}`);
+    const data = await res.json();
+
+    reqList.innerHTML = data.required_docs
+      .map(doc => `<li>${doc}</li>`)
+      .join('');
+    reqBox.classList.remove('d-none');
+  } catch {
+    reqBox.classList.add('d-none');
+  }
+});
+</script>
+{% endblock %}
