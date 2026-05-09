@@ -3,7 +3,7 @@ app.py — GeoPermit System Entry Point
 Run:  python app.py
 """
 import os
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, session
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 
@@ -26,20 +26,16 @@ def create_app():
     # Ensure uploads folder exists
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-    # MySQL
+    # MySQL — Set default cursor class BEFORE creating MySQL instance
+    app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+    
     mysql = MySQL(app)
 
-    # Override the default cursor class to return dicts
-    @app.before_request
-    def _use_dict_cursor():
-        pass  # DictCursor configured below via monkey-patch
-
-    # Inject mysql into each blueprint module
-    with app.app_context():
-        init_auth(mysql)
-        init_dashboard(mysql)
-        init_permits(mysql)
-        init_admin(mysql)
+    # Inject mysql into each blueprint module AFTER mysql is created
+    init_auth(mysql)
+    init_dashboard(mysql)
+    init_permits(mysql)
+    init_admin(mysql)
 
     # Register blueprints
     app.register_blueprint(auth_bp)
@@ -52,20 +48,9 @@ def create_app():
     def root():
         return redirect(url_for('auth.login'))
 
-    # Custom DictCursor so fetchone/fetchall return dicts
-    original_mysql_connection = MySQL.connection.fget
-
-    def dict_cursor_connection(self):
-        conn = original_mysql_connection(self)
-        conn.cursorclass = MySQLdb.cursors.DictCursor
-        return conn
-
-    MySQL.connection = property(dict_cursor_connection)
-
     # Global template context
     @app.context_processor
     def inject_globals():
-        from flask import session
         return {
             'app_name': 'GeoPermit System',
             'current_user_name': session.get('user_name', ''),
