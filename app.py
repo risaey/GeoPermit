@@ -8,6 +8,7 @@ from flask_mysqldb import MySQL
 import MySQLdb.cursors
 
 from config import Config
+from email_service import mail
 
 # Blueprints
 from routes.auth      import auth_bp,      init_auth
@@ -31,11 +32,21 @@ def create_app():
     
     mysql = MySQL(app)
 
+    # initialize Flask_mail
+    mail.init_app(app)
+
+
+    #override the default cursor class to return dicts
+    @app.before_request
+    def set_mysql_cursor():
+        pass #DictCursor configured below via mokey-patch
+
     # Inject mysql into each blueprint module AFTER mysql is created
-    init_auth(mysql)
-    init_dashboard(mysql)
-    init_permits(mysql)
-    init_admin(mysql)
+    with app.app_context():
+        init_auth(mysql)
+        init_dashboard(mysql)
+        init_permits(mysql)
+        init_admin(mysql)
 
     # Register blueprints
     app.register_blueprint(auth_bp)
@@ -48,7 +59,17 @@ def create_app():
     def root():
         return redirect(url_for('auth.login'))
 
+    # Custom DictCursor so fetchone/fetchall return dicts
+    original_mysql_connection = MySQL.connection.fget
+ 
+    def dict_cursor_connection(self):
+        conn = original_mysql_connection(self)
+        conn.cursorclass = MySQLdb.cursors.DictCursor
+        return conn
+ 
+    MySQL.connection = property(dict_cursor_connection)
     # Global template context
+    
     @app.context_processor
     def inject_globals():
         return {

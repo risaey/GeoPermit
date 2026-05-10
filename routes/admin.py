@@ -5,6 +5,8 @@ from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash, session)
 from routes.dashboard import admin_required
 import models
+from email_service import send_status_change_email
+from datetime import datetime
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 mysql = None
@@ -16,8 +18,36 @@ def init_admin(mysql_instance):
 
 
 # ---------------------------------------------------------------------------
-# Admin — all applications with optional status filter
+# Admin — Overview/Home (main admin page with quick stats)
 # ---------------------------------------------------------------------------
+
+@admin_bp.route('/')
+@admin_bp.route('/overview')
+@admin_required
+def overview():
+    cur           = models.get_db(mysql)
+    stats         = models.get_stats(cur)
+    applications  = models.get_all_applications(cur)
+    cur.close()
+    return render_template('admin/overview.html',
+                           stats=stats,
+                           applications=applications)
+
+
+# ---------------------------------------------------------------------------
+# Admin — Dashboard (statistics page)
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/dashboard')
+@admin_required
+def dashboard():
+    cur           = models.get_db(mysql)
+    stats         = models.get_stats(cur)
+    applications  = models.get_all_applications(cur)
+    cur.close()
+    return render_template('admin/dashboard.html',
+                           stats=stats,
+                           applications=applications)
 
 @admin_bp.route('/applications')
 @admin_required
@@ -59,9 +89,22 @@ def review_application(app_id):
 
         models.update_application_status(cur, app_id, action, remarks)
         mysql.connection.commit()
+
+        # Send email to applicant about status change
+        send_status_change_email(
+            user_email=application['email'],
+            user_name=application['full_name'],
+            app_id=app_id,
+            permit_type=application['permit_type_name'],
+            project_title=application['project_title'],
+            status=action,
+            decision_date=datetime.now().strftime('%B %d, %Y'),
+            remarks=remarks if remarks else None
+        )
+
         cur.close()
 
-        flash(f'Application #{app_id} has been {action}.', 'success')
+        flash(f'Application #{app_id} has been {action}. Notification email sent to applicant.', 'success')
         return redirect(url_for('admin.applications'))
 
     documents = models.get_documents_by_application(cur, app_id)
