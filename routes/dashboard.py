@@ -52,12 +52,8 @@ def index():
     cur = models.get_db(mysql)
 
     if session.get('user_role') == 'admin':
-        stats        = models.get_stats(cur)
-        applications = models.get_all_applications(cur)
         cur.close()
-        return render_template('admin/dashboard.html',
-                               stats=stats,
-                               applications=applications)
+        return redirect(url_for('admin.overview'))   # ← redirect, not render
     else:
         applications = models.get_applications_by_user(cur, session['user_id'])
         cur.close()

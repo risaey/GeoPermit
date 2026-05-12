@@ -14,11 +14,21 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
     ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'}
 
-    MAIL_SERVER   = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
-    MAIL_PORT     = int(os.environ.get('MAIL_PORT', 587))
-    MAIL_USE_TLS  = os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', '1', 't']
-    MAIL_USERNAME = os.environ.get('MAIL_USERNAME','')
-    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD','')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@geopermit.gov') 
-
-    ADMIN_EMAIL = os.environ.get('ADMIN_EMAILS', 'admin@geopermit.gov')
+    # Email Configuration - use environment variables for SMTP credentials
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
+    MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'False').lower() in ('true', '1', 'yes')
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME', '')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
+    MAIL_DEFAULT_SENDER = os.environ.get(
+        'MAIL_DEFAULT_SENDER',
+        f'GeoPermit System <{MAIL_USERNAME}>' if MAIL_USERNAME else 'GeoPermit System <noreply@geopermit.gov>'
+    )
+    MAIL_SUPPRESS_SEND = os.environ.get(
+        'MAIL_SUPPRESS_SEND',
+        'True' if not (MAIL_USERNAME and MAIL_PASSWORD) else 'False'
+    ).lower() in ('true', '1', 'yes')
+    
+    # Admin email
+    ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@geopermit.gov')

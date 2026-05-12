@@ -32,8 +32,13 @@ def create_app():
     
     mysql = MySQL(app)
 
-    # initialize Flask_mail
+    # initialize Flask-Mail
     mail.init_app(app)
+    if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
+        app.logger.warning(
+            'EMAIL WARNING: MAIL_USERNAME and MAIL_PASSWORD are not configured. '
+            'SMTP email delivery is disabled until valid credentials are provided.'
+        )
 
 
     #override the default cursor class to return dicts
@@ -88,4 +93,4 @@ def create_app():
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=True, host='0.0.0.0', port=5002)

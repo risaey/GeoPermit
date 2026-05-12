@@ -116,12 +116,23 @@
 
 {% block extra_scripts %}
 <script>
-const lat = {{ application.location_lat or 14.5995 }};
-const lng = {{ application.location_lng or 120.9842 }};
+const lat = {{ application.location_lat or 10.3157 }};
+const lng = {{ application.location_lng or 123.8854 }};
+
+// Cebu City map
 const map = L.map('view-map').setView([lat, lng], 15);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
+
+// Restrict to Cebu area
+map.setMinZoom(11);
+map.setMaxZoom(18);
+const bounds = L.latLngBounds(
+  [10.15, 123.75],   // Southwest
+  [10.50, 124.05]    // Northeast
+);
+map.fitBounds(bounds);
 
 {% if application.is_hazard_zone %}
 const icon = L.icon({

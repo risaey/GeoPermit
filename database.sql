@@ -83,7 +83,45 @@ INSERT INTO permit_types (name, description, required_docs) VALUES
 
 -- Sample hazard zones (Philippines-based coords)
 INSERT INTO hazard_zones (name, hazard_type, center_lat, center_lng, radius_meters, description) VALUES
-('Marikina River Flood Zone', 'flood', 14.6507, 121.1029, 1500, 'High flood risk area along Marikina River'),
-('Antipolo Landslide Zone', 'landslide', 14.5858, 121.1760, 2000, 'Landslide-prone hillside area'),
-('West Valley Fault Zone', 'earthquake', 14.5995, 121.0359, 3000, 'Near the West Valley Fault line'),
-('Taal Volcanic Zone', 'fire', 13.9965, 120.9942, 5000, 'Near Taal Volcano exclusion zone');
+('Lahug River Flood Zone', 'flood', 10.3163, 123.8854, 1200, 'Lahug River area - prone to flooding during heavy rains'),
+('Bulacao River Flood Zone', 'flood', 10.2741, 123.8520, 1500, 'Bulacao River valley - flash flood risk'),
+('Calinog Valley Flood Zone', 'flood', 10.3847, 123.8945, 1000, 'Low-lying area prone to water buildup'),
+('Tabu Protected Area', 'protected', 10.3200, 123.9200, 2000, 'Protected mangrove and marine sanctuary'),
+('Sirao Flower Garden Protected', 'protected', 10.3500, 123.9100, 800, 'Protected garden and eco-tourism area'),
+('Sambag Coastal Protected Area', 'protected', 10.2900, 123.8400, 1500, 'Coastal protection zone - no construction allowed'),
+('Busay Heights Landslide Zone', 'landslide', 10.3600, 123.8700, 1500, 'Steep hillside area - landslide risk during rainy season'),
+('Tops Heights Landslide Zone', 'landslide', 10.3450, 123.8650, 1200, 'Elevated area with unstable slopes'),
+('Cebu Central Fault Zone', 'earthquake', 10.3167, 123.8833, 3000, 'Near active Cebu Central Fault line'),
+('Busay Forest Fire Zone', 'fire', 10.3600, 123.8700, 2000, 'Forest area - high fire risk during dry season');
+
+
+-- ── Mock Users ─────────────────────────────────────────
+-- Password for all users below: User@1234
+-- Password for admin: Admin@1234
+-- (hashes generated via werkzeug generate_password_hash)
+
+INSERT INTO users (full_name, email, password_hash, role) VALUES
+(
+  'Juan dela Cruz',
+  'juan@email.com',
+  'PASTE_HASH_HERE',
+  'user'
+),
+(
+  'Maria Santos',
+  'maria@email.com',
+  'PASTE_HASH_HERE',
+  'user'
+),
+(
+  'Pedro Reyes',
+  'pedro@email.com',
+  'PASTE_HASH_HERE',
+  'user'
+),
+(
+  'Admin User',
+  'admin@geopermit.gov',
+  'PASTE_HASH_HERE',
+  'admin'
+);

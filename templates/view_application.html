@@ -89,14 +89,24 @@
 
 {% block extra_scripts %}
 <script>
-const lat = {{ application.location_lat or 14.5995 }};
-const lng = {{ application.location_lng or 120.9842 }};
+const lat = {{ application.location_lat or 10.3157 }};
+const lng = {{ application.location_lng or 123.8854 }};
 
+// Zoom into the exact application marker location at street level
 const map = L.map('view-map').setView([lat, lng], 15);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
+// Restrict pan/zoom to Cebu City only
+map.setMinZoom(13);
+map.setMaxZoom(18);
+map.setMaxBounds(L.latLngBounds(
+  [10.25, 123.82],  // Southwest — Cebu City boundary
+  [10.42, 123.96]   // Northeast — Cebu City boundary
+));
+
+// Marker only — no circles
 {% if application.is_hazard_zone %}
 const icon = L.icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',

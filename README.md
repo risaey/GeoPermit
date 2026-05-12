@@ -100,7 +100,22 @@ export MYSQL_DB=geopermit_db
 export SECRET_KEY=change-this-in-production
 ```
 
-### 5. Run the app
+### 5. Configure email (optional)
+
+If you want GeoPermit to send notification emails, set SMTP credentials before starting the app. For Gmail SMTP, use an app password and set the sender to the same Gmail account:
+
+```bash
+export MAIL_SERVER=smtp.gmail.com
+export MAIL_PORT=587
+export MAIL_USE_TLS=True
+export MAIL_USERNAME=youremail@gmail.com
+export MAIL_PASSWORD=your-gmail-app-password
+export MAIL_DEFAULT_SENDER='GeoPermit System <youremail@gmail.com>'
+```
+
+If `MAIL_USERNAME` and `MAIL_PASSWORD` are not set, email delivery will be disabled and the app will continue running.
+
+### 6. Run the app
 
 ```bash
 python app.py

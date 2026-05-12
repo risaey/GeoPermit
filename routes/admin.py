@@ -29,7 +29,7 @@ def overview():
     stats         = models.get_stats(cur)
     applications  = models.get_all_applications(cur)
     cur.close()
-    return render_template('admin/overview.html',
+    return render_template('admin/dashboard.html',
                            stats=stats,
                            applications=applications)
 

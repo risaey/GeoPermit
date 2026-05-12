@@ -111,13 +111,89 @@
 {% block extra_scripts %}
 <script>
 // -----------------------------------------------------------------------
-// Leaflet map setup — centered on Metro Manila
+// Leaflet map setup — Cebu City with Protected & Hazard Areas
 // -----------------------------------------------------------------------
-const map = L.map('permit-map').setView([14.5995, 120.9842], 11);
+
+// Cebu City coordinates
+const CEBU_CENTER = [10.3157, 123.8854];
+const CEBU_ZOOM = 13;
+
+const map = L.map('permit-map').setView(CEBU_CENTER, CEBU_ZOOM);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
+
+// Hazard zones data (from database)
+const hazardZonesData = [
+  // Flood zones (yellow)
+  { lat: 10.3163, lng: 123.8854, radius: 1200, name: 'Lahug River Flood Zone', type: 'flood', color: '#FFD700' },
+  { lat: 10.2741, lng: 123.8520, radius: 1500, name: 'Bulacao River Flood Zone', type: 'flood', color: '#FFD700' },
+  { lat: 10.3847, lng: 123.8945, radius: 1000, name: 'Calinog Valley Flood Zone', type: 'flood', color: '#FFD700' },
+  
+  // Protected areas (green)
+  { lat: 10.3200, lng: 123.9200, radius: 2000, name: 'Tabu Protected Area', type: 'protected', color: '#00AA00' },
+  { lat: 10.3500, lng: 123.9100, radius: 800, name: 'Sirao Flower Garden Protected', type: 'protected', color: '#00AA00' },
+  { lat: 10.2900, lng: 123.8400, radius: 1500, name: 'Sambag Coastal Protected Area', type: 'protected', color: '#00AA00' },
+  
+  // Landslide zones (orange)
+  { lat: 10.3600, lng: 123.8700, radius: 1500, name: 'Busay Heights Landslide Zone', type: 'landslide', color: '#FFA500' },
+  { lat: 10.3450, lng: 123.8650, radius: 1200, name: 'Tops Heights Landslide Zone', type: 'landslide', color: '#FFA500' },
+  
+  // Earthquake zone (purple)
+  { lat: 10.3167, lng: 123.8833, radius: 3000, name: 'Cebu Central Fault Zone', type: 'earthquake', color: '#9966FF' },
+  
+  // Fire zone (red)
+  { lat: 10.3600, lng: 123.8700, radius: 2000, name: 'Busay Forest Fire Zone', type: 'fire', color: '#FF4444' }
+];
+
+// Draw all hazard zones on map
+hazardZonesData.forEach(zone => {
+  L.circle([zone.lat, zone.lng], {
+    radius: zone.radius,
+    color: zone.color,
+    fillColor: zone.color,
+    fillOpacity: 0.3,
+    weight: 2
+  }).addTo(map).bindPopup(`
+    <strong>${zone.name}</strong><br>
+    Type: ${zone.type.toUpperCase()}<br>
+    Radius: ${(zone.radius/1000).toFixed(1)}km
+  `);
+});
+
+// Add legend to map
+const legend = L.control({ position: 'topright' });
+legend.onAdd = function (map) {
+  const div = L.DomUtil.create('div', 'info');
+  div.style.background = 'white';
+  div.style.padding = '10px';
+  div.style.borderRadius = '5px';
+  div.style.boxShadow = '0 0 15px rgba(0,0,0,0.2)';
+  div.innerHTML = `
+    <h5 style="margin: 0 0 10px 0;">Cebu City Zones</h5>
+    <div style="font-size: 12px; line-height: 1.8;">
+      <span style="background: #FFD700; padding: 2px 6px; border-radius: 3px;">■</span> Flood Zone<br>
+      <span style="background: #00AA00; padding: 2px 6px; border-radius: 3px;">■</span> Protected Area<br>
+      <span style="background: #FFA500; padding: 2px 6px; border-radius: 3px;">■</span> Landslide Zone<br>
+      <span style="background: #9966FF; padding: 2px 6px; border-radius: 3px;">■</span> Earthquake Fault<br>
+      <span style="background: #FF4444; padding: 2px 6px; border-radius: 3px;">■</span> Fire Zone
+    </div>
+  `;
+  return div;
+};
+legend.addTo(map);
+
+// Prevent zooming out too far (keep focused on Cebu)
+map.setMinZoom(11);
+map.setMaxZoom(18);
+
+// Restrict map bounds to Cebu area
+const bounds = L.latLngBounds(
+  [10.15, 123.75],  // Southwest corner
+  [10.50, 124.05]   // Northeast corner
+);
+map.fitBounds(bounds);
 
 let marker = null;
 
